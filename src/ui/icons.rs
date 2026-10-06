@@ -28,6 +28,8 @@ pub enum Icon {
     Sound,
     Loop,
     Recent,
+    Close,
+    Tab,
     ZoomIn,
     ZoomOut,
 }
@@ -90,6 +92,10 @@ impl Icon {
             }
             Self::ZoomOut => {
                 r#"<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.3 15.3l5 5"/><path d="M7.8 10.5h5.4"/>"#
+            }
+            Self::Close => r#"<path d="M6.5 6.5l11 11"/><path d="M17.5 6.5l-11 11"/>"#,
+            Self::Tab => {
+                r#"<path d="M6 3.5h8l4 4V19a1.5 1.5 0 0 1-1.5 1.5h-10A1.5 1.5 0 0 1 5 19V5a1.5 1.5 0 0 1 1-1.5z"/><path d="M8.5 11h7"/><path d="M8.5 14h7"/><path d="M8.5 17h7"/>"#
             }
             Self::Down => r#"<path d="M6 9l6 6 6-6"/>"#,
             Self::Alert => {

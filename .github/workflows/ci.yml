@@ -50,6 +50,25 @@ jobs:
       - name: Check cargo clippy warnings
         run: cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
 
+  android-build:
+    name: Android CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+          components: clippy
+      - name: Check cargo clippy warnings for Android phones
+        # the NDK of the runner links the library the APK loads
+        run: |
+          bin="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          export CC_aarch64_linux_android="$bin/aarch64-linux-android30-clang"
+          export AR_aarch64_linux_android="$bin/llvm-ar"
+          export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$bin/aarch64-linux-android30-clang"
+          cargo clippy --locked --lib --target aarch64-linux-android -- -D warnings
+
   windows-build:
     name: windows CI
     runs-on: windows-latest

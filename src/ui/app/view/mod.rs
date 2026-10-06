@@ -4,6 +4,7 @@ use iced::widget::space::Space;
 use iced::widget::{column, container, mouse_area, opaque, pin, stack};
 use iced::{Element, Length};
 
+use crate::platform;
 use crate::ui::app::message::Message;
 use crate::ui::app::{App, TITLE_BAR_INSET};
 use crate::ui::icons::Icon;
@@ -11,6 +12,7 @@ use crate::ui::tablature::Tablature;
 use crate::ui::theme::{self, Tokens};
 use crate::ui::widgets::{error_dialog, icon_button, modal_layer};
 
+mod browser;
 mod header;
 mod recent_files;
 mod track_menu;
@@ -67,6 +69,8 @@ impl App {
                 .spacing(if self.is_fullscreen { 0.0 } else { gap })
                 .padding(iced::Padding {
                     top,
+                    // clear of the gesture bar a phone draws over the app
+                    bottom: if platform::IS_MOBILE { gap + 14.0 } else { gap },
                     ..iced::Padding::new(gap)
                 }),
         )
@@ -100,8 +104,15 @@ impl App {
             nothing()
         };
 
-        let menu = match self.menu {
-            Some((menu, anchor)) if !self.is_fullscreen => {
+        let menu = match (self.menu, &self.browser) {
+            // the file browser is a menu taking the window
+            (_, Some(browser)) => modal_layer(
+                container(browser::file_browser(browser, tokens))
+                    .padding(16)
+                    .center_x(Length::Fill),
+                Message::CloseBrowser,
+            ),
+            (Some((menu, anchor)), None) if !self.is_fullscreen => {
                 // the track menu opens rightwards from its button, the
                 // recent files one leftwards, from the window's right side
                 let (content, x) = match menu {

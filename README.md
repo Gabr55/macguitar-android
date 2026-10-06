@@ -1,8 +1,10 @@
-# MacGuitar
+# MacGuitar for Android
 
-[![Build status](https://github.com/Gabr55/macguitar/actions/workflows/ci.yml/badge.svg)](https://github.com/Gabr55/macguitar/actions/workflows/ci.yml)
+[![Build status](https://github.com/Gabr55/macguitar-android/actions/workflows/ci.yml/badge.svg)](https://github.com/Gabr55/macguitar-android/actions/workflows/ci.yml)
 
-A Guitar Pro tablature player for macOS and Windows.
+A Guitar Pro tablature player for Android phones: [MacGuitar](https://github.com/Gabr55/macguitar), the player for macOS and Windows, made for a phone. This repository holds the history of MacGuitar and the Android work on top of it; the desktop versions are released in [MacGuitar](https://github.com/Gabr55/macguitar/releases).
+
+**Work in progress**: it runs on the Android emulator, but crashes on some phones with a Mali GPU (in the driver, `libGLES_mali.so`). After a crash the app shows why when opened again, and saves the report as `Download/MacGuitar-crash.txt`.
 
 Based on [ruxguitar](https://github.com/agourlay/ruxguitar) by Arnaud Gourlay, under the Apache License 2.0. Its original design is described in the article "[Playing guitar tablatures in Rust](https://agourlay.github.io/ruxguitar-tablature-player/)".
 
@@ -32,37 +34,23 @@ Based on [ruxguitar](https://github.com/agourlay/ruxguitar) by Arnaud Gourlay, u
     - `Ctrl+Cmd+F` (or `F11`) fullscreen, `Esc` to leave it
 - A left click places the playhead on a beat
 - Files open from the dialog, the recent files, or by drag and drop
-- On a touch screen: a tap places the playhead, a finger moving scrolls, a hold loops the measure, a hold then a drag loops the measures it goes over, a hold on a loop clears it
+- On a phone, as in Ultimate Guitar:
+    - a tap places the playhead, a finger moving scrolls
+    - a hold loops the measure, a hold then a drag loops the measures it goes over, a hold on a loop clears it
+    - upright or across: the controls fit the screen, the sound and the zoom included
+    - tabs open from an in-app file browser (it asks once for the access to all files) or from a file manager, with "Open with MacGuitar"
 
 It is a player: no editing, and tablature only, no standard notation.
 
 ## Installation
 
-### macOS (Apple Silicon)
+### Android (phones, arm64)
 
-Download `MacGuitar-<version>-macos-arm64.zip` from the [releases](https://github.com/Gabr55/macguitar/releases), unzip it and move `MacGuitar.app` to Applications, or run the install script, which does that with the latest release:
+Download `MacGuitar-<version>-android-arm64.apk` from the [releases](https://github.com/Gabr55/macguitar-android/releases) on the phone and open it; Android asks to allow installing apps from the browser or the file manager it was opened in (Android 11 or later). The APK is signed with a development key, not by a store.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/Gabr55/macguitar/master/scripts/install.sh | sh
-```
+### macOS and Windows
 
-The app is signed ad hoc, not notarized by Apple.
-
-### Windows (64-bit)
-
-Download `MacGuitar-<version>-windows-x64.zip` from the [releases](https://github.com/Gabr55/macguitar/releases), unzip it and run `MacGuitar.exe` (Windows 10 or later). The exe is not signed: SmartScreen asks to confirm the first launch ("More info", then "Run anyway").
-
-### Android
-
-An Android version for phones is made in [macguitar-android](https://github.com/Gabr55/macguitar-android).
-
-### Other systems, from source
-
-The player builds on macOS (Intel included) and Linux as well; the dependencies each system needs are in the [CI configuration](https://github.com/Gabr55/macguitar/blob/master/.github/workflows/ci.yml).
-
-```bash
-cargo install --locked --git https://github.com/Gabr55/macguitar
-```
+From [MacGuitar](https://github.com/Gabr55/macguitar#installation).
 
 ## Sound
 
@@ -109,9 +97,10 @@ Settings are kept in `~/.config/macguitar/`. On the first launch, those of ruxgu
 cargo run -- --tab-file-path test-files/effects.gp5   # run
 cargo test                                            # tests
 scripts/bundle-macos.sh --install                     # build MacGuitar.app into /Applications
+scripts/build-android.sh --install                    # build the APK, install it on the phone adb sees
 ```
 
-`scripts/bundle-macos.sh` builds `MacGuitar.app` for Apple Silicon with its icon, and its zip, `MacGuitar-<version>-macos-arm64.zip`, in `target/macos-arm64/`; the release workflow attaches the same zip to each release, with a zip of `MacGuitar.exe` for Windows. In VS Code, `Cmd+Shift+B` runs the app, and the tasks and debug configurations (for [CodeLLDB](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb)) run, test, lint and bundle it.
+`scripts/bundle-macos.sh` builds `MacGuitar.app` for Apple Silicon with its icon, and its zip, `MacGuitar-<version>-macos-arm64.zip`, in `target/macos-arm64/`; the desktop releases are made in MacGuitar. `scripts/build-android.sh` builds the Android APK with [cargo-apk](https://crates.io/crates/cargo-apk), from the Android SDK and NDK. iced does not run on Android as released: `vendor/iced_winit` is its windowing crate with the few changes Android needs, described in `vendor/README.md`. In VS Code, `Cmd+Shift+B` runs the app, and the tasks and debug configurations (for [CodeLLDB](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb)) run, test, lint and bundle it.
 
 The tests read small feature files in `test-files/`, from [alphaTab](https://github.com/CoderLine/alphaTab)'s test data (MPL-2.0). No song transcriptions are distributed: they are copyrighted.
 
@@ -120,7 +109,9 @@ The tests read small feature files in `test-files/`, from [alphaTab](https://git
 ```
 src/
 ├── main.rs, lib.rs                the desktop binary, and the library it runs
+├── android.rs                     the Android entry point and its JNI calls
 ├── cli.rs, error.rs, config.rs    arguments, errors, saved settings
+├── platform.rs                    what differs on Android: files, permissions
 ├── parser/        Guitar Pro files → model::Song
 │   ├── gp345/     GP3, GP4, GP5 (binary, read with nom)
 │   └── gp67/      GP6 .gpx and GP7 .gp (container → GPIF XML → song)
@@ -133,7 +124,7 @@ src/
     ├── app/       state, messages, handlers (update/) and views (view/)
     ├── tablature/ measures laid out in lines; each measure painted on a
     │              canvas: notes, rhythm, effects, bends, bars, highlights
-    └── theme.rs, widgets.rs, icons.rs, files.rs, tuning.rs
+    └── theme.rs, widgets.rs, icons.rs, files.rs, browser.rs, tuning.rs
 ```
 
 The interface follows iced's model: `Message`s go through `update`, which changes the state and the player; `view` draws from the state. The player runs on the audio thread and shares its settings through atomics; it reports the beat played back through a notification the interface subscribes to.

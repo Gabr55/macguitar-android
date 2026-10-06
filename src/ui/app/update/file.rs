@@ -11,10 +11,14 @@ use crate::audio::midi_player::AudioPlayer;
 use crate::audio::playback_order::compute_playback_order;
 use crate::parser::model::Song;
 use crate::parser::parse_gp_data;
+use crate::platform;
 use crate::ui::app::App;
 use crate::ui::app::message::{Message, SoundChoice, TrackSelection};
 use crate::ui::app::song_info::SongDisplayInfo;
-use crate::ui::files::{FileError, LoadedFile, load_tablature, pick_sound_font, pick_tablature};
+use crate::ui::browser::{FileBrowser, Pick};
+use crate::ui::files::{FileError, LoadedFile, load_tablature};
+#[cfg(not(target_os = "android"))]
+use crate::ui::files::{pick_sound_font, pick_tablature};
 use crate::ui::tablature::Tablature;
 
 impl App {
@@ -22,11 +26,40 @@ impl App {
         if self.is_loading {
             return Task::none();
         }
+        if platform::BROWSES_FILES {
+            let folder = self
+                .config
+                .get_tabs_folder()
+                .filter(|folder| folder.starts_with(platform::storage_root()))
+                .unwrap_or_else(platform::default_folder);
+            self.browse(Pick::Tablature, folder);
+            return Task::none();
+        }
         self.is_loading = true;
-        Task::perform(
+        #[cfg(not(target_os = "android"))]
+        return Task::perform(
             pick_tablature(self.config.get_tabs_folder()),
             Message::TablaturePicked,
-        )
+        );
+        #[cfg(target_os = "android")]
+        Task::none()
+    }
+
+    /// Show the file browser on `folder`, looking for `pick`.
+    fn browse(&mut self, pick: Pick, folder: PathBuf) {
+        self.menu = None;
+        self.browser = Some(FileBrowser::new(pick, folder));
+    }
+
+    /// The file browser closes on the file picked, which opens.
+    pub(super) fn browser_picked(&mut self, path: PathBuf) -> Task<Message> {
+        let Some(browser) = self.browser.take() else {
+            return Task::none();
+        };
+        match browser.pick {
+            Pick::Tablature => self.open_file(path),
+            Pick::SoundFont => self.change_sound_font(Some(path)),
+        }
     }
 
     pub(super) fn open_file(&mut self, path: PathBuf) -> Task<Message> {
@@ -137,7 +170,14 @@ impl App {
 
     pub(super) fn select_sound(&mut self, choice: SoundChoice) -> Task<Message> {
         match choice {
+            SoundChoice::Browse if platform::BROWSES_FILES => {
+                self.browse(Pick::SoundFont, platform::default_folder());
+                Task::none()
+            }
+            #[cfg(not(target_os = "android"))]
             SoundChoice::Browse => Task::perform(pick_sound_font(), Message::SoundFontPicked),
+            #[cfg(target_os = "android")]
+            SoundChoice::Browse => Task::none(),
             SoundChoice::BuiltIn => self.change_sound_font(None),
             SoundChoice::File(path) => self.change_sound_font(Some(path)),
         }

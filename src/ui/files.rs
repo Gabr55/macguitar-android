@@ -46,6 +46,7 @@ pub fn is_tablature(path: &Path) -> bool {
 }
 
 /// Asks for a tablature, starting in `folder`; `None` when dismissed.
+#[cfg(not(target_os = "android"))]
 pub async fn pick_tablature(folder: Option<PathBuf>) -> Option<PathBuf> {
     let mut dialog = rfd::AsyncFileDialog::new()
         .add_filter("Guitar Pro files", &SUPPORTED_EXTENSIONS)
@@ -60,6 +61,7 @@ pub async fn pick_tablature(folder: Option<PathBuf>) -> Option<PathBuf> {
 }
 
 /// Asks for a SoundFont; `None` when dismissed.
+#[cfg(not(target_os = "android"))]
 pub async fn pick_sound_font() -> Option<PathBuf> {
     rfd::AsyncFileDialog::new()
         .add_filter("SoundFont", &["sf2"])

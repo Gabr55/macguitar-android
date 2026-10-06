@@ -5,7 +5,8 @@
 //! turns it into MIDI events played by a SoundFont synthesizer, and `ui`
 //! draws the tablature and the controls with iced.
 //!
-//! The desktop binary starts it with [`run_desktop`].
+//! The desktop binary starts it with [`run_desktop`]; on Android the
+//! activity calls `android_main`.
 
 use crate::cli::{CliArgs, ThemeChoice};
 use crate::config::Config;
@@ -18,7 +19,11 @@ mod cli;
 mod config;
 mod error;
 mod parser;
+mod platform;
 mod ui;
+
+#[cfg(target_os = "android")]
+mod android;
 
 /// Start the player with the command line arguments, logging to the
 /// console; the process exits with an error message if it fails.

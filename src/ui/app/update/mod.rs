@@ -9,6 +9,7 @@ mod window;
 
 use iced::Task;
 
+use crate::platform;
 use crate::ui::app::App;
 use crate::ui::app::message::Message;
 
@@ -17,17 +18,44 @@ impl App {
         match message {
             // files
             Message::OpenFileDialog => self.open_file_dialog(),
+            #[cfg(not(target_os = "android"))]
             Message::TablaturePicked(path) => {
                 self.is_loading = false;
                 path.map_or_else(Task::none, |path| self.open_file(path))
             }
             Message::OpenFile(path) => self.open_file(path),
             Message::FileLoaded(result) => self.file_loaded(result),
+            Message::BrowseTo(folder) => {
+                if let Some(browser) = &mut self.browser {
+                    browser.enter(folder);
+                }
+                Task::none()
+            }
+            Message::BrowserPicked(path) => self.browser_picked(path),
             Message::Zoom(direction) => self.zoom(direction),
             Message::TouchDown(measure, beat) => self.touch_down(measure, beat),
             Message::TouchScrolled => self.touch_scrolled(),
             Message::TouchHeld(id) => self.touch_held(id),
             Message::TouchEnded => self.touch_ended(),
+            Message::WindowUnfocused => {
+                platform::on_screen(false);
+                Task::none()
+            }
+            Message::WindowFocused => {
+                platform::on_screen(true);
+                if let Some(browser) = &mut self.browser {
+                    browser.refresh();
+                }
+                Task::none()
+            }
+            Message::CloseBrowser => {
+                self.browser = None;
+                Task::none()
+            }
+            Message::GrantStorageAccess => {
+                platform::request_storage_access();
+                Task::none()
+            }
 
             // playback
             Message::PlayPause => self.play_pause(),
@@ -52,6 +80,7 @@ impl App {
                 Task::none()
             }
             Message::SoundSelected(choice) => self.select_sound(choice),
+            #[cfg(not(target_os = "android"))]
             Message::SoundFontPicked(path) => {
                 path.map_or_else(Task::none, |path| self.change_sound_font(Some(path)))
             }

@@ -7,8 +7,8 @@ authors = [
     "Габриелян Александр",
     "Arnaud Gourlay <arnaud.gourlay@gmail.com>",
 ]
-description = "A Guitar Pro tablature player for macOS and Windows"
-repository = "https://github.com/Gabr55/macguitar"
+description = "A Guitar Pro tablature player for Android phones"
+repository = "https://github.com/Gabr55/macguitar-android"
 license = "Apache-2.0"
 readme = "README.md"
 categories = ["multimedia"]
@@ -43,6 +43,10 @@ semicolon_if_nothing_returned = "warn"
 unreadable_literal = "warn"
 unused_async = "warn"
 
+[lib]
+# the desktop binary links the library; Android loads it as a shared object
+crate-type = ["rlib", "cdylib"]
+
 [dependencies]
 nom = "8.0.0"
 encoding_rs = "0.8.35"
@@ -54,7 +58,6 @@ iced = { version = "0.14.0", features = [
     "svg",
 ] }
 tokio = { version = "1.53.1", features = ["fs", "sync", "time"] }
-rfd = "0.17.2"
 log = "0.4.33"
 env_logger = "0.11.11"
 rustysynth = "1.3.6"
@@ -67,6 +70,64 @@ roxmltree = "0.21.1"
 zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
 png = "0.18.1"
 
+# the native file dialog; Android browses the storage in the app instead
+[target.'cfg(not(target_os = "android"))'.dependencies]
+rfd = "0.17.2"
+
+[target.'cfg(target_os = "android")'.dependencies]
+iced_winit = "0.14.0"
+winit = { version = "0.30", features = ["android-native-activity"] }
+android_logger = "0.15"
+jni = "0.21"
+rustc-demangle = "0.1"
+
+# iced 0.14 cannot run on Android as released: the patched copy builds the
+# event loop with the activity and follows its suspensions (vendor/README.md)
+[patch.crates-io]
+iced_winit = { path = "vendor/iced_winit" }
+
 [profile.release]
 lto = "fat"
 codegen-units = 1
+
+# The Android package, built with cargo-apk (scripts/build-android.sh)
+[package.metadata.android]
+package = "io.github.gabr55.macguitar"
+apk_name = "MacGuitar"
+build_targets = ["aarch64-linux-android"]
+resources = "android/res"
+
+[package.metadata.android.sdk]
+# Android 11: the access to all files the file browser needs
+min_sdk_version = 30
+target_sdk_version = 35
+
+# listing the tabs of the storage, and reading those opened with the app
+[[package.metadata.android.uses_permission]]
+name = "android.permission.MANAGE_EXTERNAL_STORAGE"
+
+[[package.metadata.android.uses_permission]]
+name = "android.permission.READ_EXTERNAL_STORAGE"
+
+[package.metadata.android.application]
+label = "MacGuitar"
+icon = "@mipmap/ic_launcher"
+theme = "@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen"
+
+[package.metadata.android.application.activity]
+# upright or across, as the phone is held
+orientation = "fullUser"
+# the app follows these itself: Android must not make the activity again
+config_changes = "orientation|screenSize|smallestScreenSize|screenLayout|density|fontScale|keyboard|keyboardHidden|navigation|uiMode|locale|layoutDirection|colorMode"
+
+# "Open with MacGuitar" for the files Guitar Pro tabs come as
+[[package.metadata.android.application.activity.intent_filter]]
+actions = ["android.intent.action.VIEW"]
+categories = ["android.intent.category.DEFAULT", "android.intent.category.BROWSABLE"]
+data = [
+    { scheme = "content", mime_type = "application/octet-stream" },
+    { scheme = "content", mime_type = "application/x-guitar-pro" },
+    { scheme = "content", mime_type = "application/gpx+xml" },
+    { scheme = "content", mime_type = "application/zip" },
+    { scheme = "file", mime_type = "application/octet-stream" },
+]

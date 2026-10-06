@@ -1,4 +1,5 @@
-//! The settings kept between launches, in `~/.config/macguitar/config.json`:
+//! The settings kept between launches, in `~/.config/macguitar/config.json`
+//! (in the private folder of the app on Android):
 //! the folder of the last tablature, the SoundFont, the recent files.
 
 use std::{
@@ -7,6 +8,7 @@ use std::{
     io::{BufReader, Write},
     path::Path,
     path::PathBuf,
+    sync::OnceLock,
 };
 
 use serde::{Deserialize, Serialize};
@@ -26,6 +28,9 @@ pub struct Config {
     #[serde(default)]
     zoom: Option<f32>,
 }
+
+/// Where the settings are kept when not in the home directory.
+static APP_FOLDER: OnceLock<PathBuf> = OnceLock::new();
 
 /// How many recent files are remembered.
 const MAX_RECENT_FILES: usize = 10;
@@ -124,10 +129,20 @@ impl Config {
     }
 
     fn get_base_path() -> Result<PathBuf, AppError> {
+        if let Some(folder) = APP_FOLDER.get() {
+            return Ok(folder.clone());
+        }
         let home = home_dir()
             .ok_or_else(|| AppError::Config("Could not find home directory".to_string()))?;
         let path = home.join(Self::FOLDER);
         Ok(path)
+    }
+
+    /// Keep the settings in `folder` instead of the home directory: the
+    /// private folder of the app, on Android.
+    #[cfg_attr(not(target_os = "android"), allow(dead_code))]
+    pub fn use_folder(folder: PathBuf) {
+        let _ = APP_FOLDER.set(folder);
     }
 
     fn get_path() -> Result<PathBuf, AppError> {

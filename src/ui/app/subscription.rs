@@ -71,7 +71,10 @@ impl App {
                     Some(Message::ToggleMute)
                 }
                 keyboard::Key::Named(F11) => Some(Message::ToggleFullscreen),
-                keyboard::Key::Named(keyboard::key::Named::Escape) => Some(Message::Escape),
+                // the back key of a phone closes what is open, as Esc does
+                keyboard::Key::Named(
+                    keyboard::key::Named::Escape | keyboard::key::Named::BrowserBack,
+                ) => Some(Message::Escape),
                 keyboard::Key::Character(c) if c.eq_ignore_ascii_case("l") => {
                     Some(Message::ToggleLoop)
                 }
@@ -110,6 +113,9 @@ impl App {
         let file_dropped = window::events().filter_map(|(_, event)| match event {
             window::Event::FileDropped(path) => Some(Message::OpenFile(path)),
             window::Event::Opened { size, .. } => Some(Message::WindowSized(size)),
+            // back from elsewhere, from the settings granting the files
+            window::Event::Focused => Some(Message::WindowFocused),
+            window::Event::Unfocused => Some(Message::WindowUnfocused),
             _ => None,
         });
         subscriptions.push(file_dropped);

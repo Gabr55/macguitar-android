@@ -3,6 +3,7 @@
 use iced::widget::{Space, center, column, container, responsive, row, text};
 use iced::{Alignment, Element};
 
+use crate::platform;
 use crate::ui::app::App;
 use crate::ui::app::message::Message;
 use crate::ui::icons::logo;
@@ -93,7 +94,14 @@ impl App {
         };
         content = content
             .push(open)
-            .push(muted("or drop a .gp, .gpx, .gp5, .gp4 or .gp3 file onto the window").size(13))
+            .push(
+                muted(if platform::IS_MOBILE {
+                    "or open a .gp, .gpx, .gp5, .gp4 or .gp3 file with MacGuitar from your files"
+                } else {
+                    "or drop a .gp, .gpx, .gp5, .gp4 or .gp3 file onto the window"
+                })
+                .size(13),
+            )
             .spacing(8)
             .align_x(Alignment::Center);
         let recent_height = if self.recent_files.is_empty() {
@@ -101,8 +109,12 @@ impl App {
         } else {
             RECENT_CARD_MAX_HEIGHT
         };
-        let shows_shortcuts = height
-            >= WELCOME_BASE_HEIGHT + recent_height.min(RECENT_CARD_MIN_HEIGHT) + SHORTCUTS_HEIGHT;
+        // a touch screen has no keys to show
+        let shows_shortcuts = !platform::IS_MOBILE
+            && height
+                >= WELCOME_BASE_HEIGHT
+                    + recent_height.min(RECENT_CARD_MIN_HEIGHT)
+                    + SHORTCUTS_HEIGHT;
         let base = if compact {
             COMPACT_BASE_HEIGHT
         } else {

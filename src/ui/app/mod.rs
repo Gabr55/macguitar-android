@@ -21,6 +21,7 @@ use crate::ApplicationArgs;
 use crate::audio::midi_player::AudioPlayer;
 use crate::cli::ThemeChoice;
 use crate::config::Config;
+use crate::ui::browser::FileBrowser;
 use crate::ui::tablature::Tablature;
 use crate::ui::theme;
 use crate::ui::widgets::UI_FONT;
@@ -77,6 +78,8 @@ pub struct App {
     is_fullscreen: bool,
     /// The open menu, with the bounds of the button it hangs under.
     menu: Option<(Menu, Rectangle)>,
+    /// The folder browsed for a file, where there is no file dialog.
+    browser: Option<FileBrowser>,
     /// Size of the window, which a phone's screen makes compact.
     window_size: Size,
     /// How large the tablature is drawn, kept between songs and launches.
@@ -168,6 +171,7 @@ impl App {
             theme: theme::build(theme::is_dark(theme_choice, Mode::None)),
             is_fullscreen: false,
             menu: None,
+            browser: None,
             window_size: Size::new(WINDOW_WIDTH, WINDOW_HEIGHT),
             zoom,
             error_message: None,

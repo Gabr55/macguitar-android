@@ -4,6 +4,7 @@ use iced::theme::Mode;
 use iced::widget::{Id, selector};
 use iced::{Task, window};
 
+use crate::platform;
 use crate::ui::app::App;
 use crate::ui::app::message::{Menu, Message};
 use crate::ui::theme;
@@ -54,12 +55,17 @@ impl App {
         if self.error_message.is_some() {
             self.error_message = None;
             Task::none()
+        } else if self.browser.is_some() {
+            self.browser = None;
+            Task::none()
         } else if self.menu.is_some() {
             self.menu = None;
             Task::none()
         } else if self.is_fullscreen {
             self.set_fullscreen(false)
         } else {
+            // nothing left to close: a phone goes back to what was before
+            platform::send_to_background();
             Task::none()
         }
     }
@@ -86,6 +92,7 @@ mod tests {
     use crate::config::Config;
     use crate::ui::app::App;
     use crate::ui::app::message::{Menu, Message};
+    use crate::ui::browser::{FileBrowser, Pick};
     use iced::Rectangle;
 
     #[test]
@@ -95,9 +102,16 @@ mod tests {
         app.menu = Some((Menu::Tracks, Rectangle::default()));
         app.is_fullscreen = true;
 
+        app.browser = Some(FileBrowser::new(Pick::Tablature, "test-files".into()));
+
         let _ = app.update(Message::Escape);
         assert!(app.error_message.is_none());
-        assert!(app.menu.is_some() && app.is_fullscreen);
+        assert!(app.browser.is_some() && app.menu.is_some() && app.is_fullscreen);
+
+        // the back key of a phone closes the file browser first
+        let _ = app.update(Message::Escape);
+        assert!(app.browser.is_none());
+        assert!(app.menu.is_some());
 
         let _ = app.update(Message::Escape);
         assert!(app.menu.is_none());

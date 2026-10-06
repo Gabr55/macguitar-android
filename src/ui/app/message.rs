@@ -150,9 +150,21 @@ pub enum Message {
     // files
     OpenFileDialog,
     /// The file dialog closed, on a tablature or none.
+    #[cfg(not(target_os = "android"))]
     TablaturePicked(Option<PathBuf>),
     OpenFile(PathBuf),
     FileLoaded(Result<LoadedFile, FileError>),
+    /// Go into a folder of the file browser.
+    BrowseTo(PathBuf),
+    /// A file picked in the file browser.
+    BrowserPicked(PathBuf),
+    CloseBrowser,
+    /// The window came back to the front: what was listed may have changed.
+    WindowFocused,
+    /// The window went behind another, or the phone went to another app.
+    WindowUnfocused,
+    /// Open the settings granting the access to the files.
+    GrantStorageAccess,
 
     // playback
     PlayPause,
@@ -177,6 +189,7 @@ pub enum Message {
     /// Volume of a track, in `0.0..=1.0`, from the track menu.
     TrackVolumeChanged(usize, f32),
     SoundSelected(SoundChoice),
+    #[cfg(not(target_os = "android"))]
     SoundFontPicked(Option<PathBuf>),
 
     // practice

@@ -7,6 +7,7 @@ use iced::widget::{
 };
 use iced::{Alignment, Element, Length};
 
+use crate::platform;
 use crate::ui::app::message::Menu;
 use crate::ui::app::message::{Message, SoundChoice};
 use crate::ui::app::{App, TITLE_BAR_INSET};
@@ -151,13 +152,18 @@ impl App {
 
         let sound = self.sound_picker(tokens);
 
-        let fullscreen = icon_button(
-            Icon::Fullscreen,
-            "Fullscreen (\u{2303}\u{2318}F)",
-            Some(Message::ToggleFullscreen),
-            tokens,
-        );
-        // a narrow window takes the sound down to the transport
+        // a phone is fullscreen already
+        let fullscreen: Element<'_, Message> = if platform::IS_MOBILE {
+            Space::new().into()
+        } else {
+            icon_button(
+                Icon::Fullscreen,
+                "Fullscreen (\u{2303}\u{2318}F)",
+                Some(Message::ToggleFullscreen),
+                tokens,
+            )
+        };
+        // the sound goes down to the transport on a phone
         if !compact {
             header = header.push(divider()).push(sound).push(divider());
         }

@@ -37,6 +37,10 @@ pub fn with_tooltip<'a>(
     label: &'a str,
     position: tooltip::Position,
 ) -> Element<'a, Message> {
+    // a touch leaves no pointer to hover with: a tooltip would stay up
+    if crate::platform::IS_MOBILE {
+        return content.into();
+    }
     tooltip(
         content,
         container(text(label).size(12)).padding([4, 8]),

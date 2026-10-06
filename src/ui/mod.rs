@@ -2,7 +2,8 @@
 //! widgets, theme and icons they share.
 
 pub mod app;
-mod files;
+mod browser;
+pub(crate) mod files;
 mod icons;
 mod tablature;
 mod theme;

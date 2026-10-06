@@ -7,6 +7,7 @@ use iced::widget::{button, column, container, scrollable, text};
 use iced::{Element, Length};
 use std::path::Path;
 
+use crate::platform;
 use crate::ui::app::App;
 use crate::ui::app::message::Message;
 use crate::ui::theme;
@@ -89,6 +90,16 @@ const MAX_FOLDER_CHARS: usize = 48;
 /// `folder` as the entry shows it: the home directory written `~`, and a
 /// long path cut from the start, keeping the folders nearest the file.
 fn home_relative(folder: &Path) -> String {
+    // a tab given by "Open with" is kept in the app's own folder
+    if platform::IS_MOBILE && folder.ends_with("files/opened") {
+        return "Opened from another app".to_string();
+    }
+    // on a phone, the folders of its storage: "Download/Tabs"
+    if platform::IS_MOBILE
+        && let Ok(relative) = folder.strip_prefix(platform::storage_root())
+    {
+        return shorten_folder(&relative.display().to_string(), MAX_FOLDER_CHARS);
+    }
     let full = std::env::home_dir()
         .and_then(|home| folder.strip_prefix(home).ok().map(Path::to_path_buf))
         .map_or_else(
