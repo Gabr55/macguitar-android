@@ -18,6 +18,7 @@ mod audio;
 mod cli;
 mod config;
 mod error;
+mod library;
 mod parser;
 mod platform;
 mod ui;

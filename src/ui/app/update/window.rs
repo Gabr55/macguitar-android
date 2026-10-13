@@ -6,7 +6,7 @@ use iced::{Task, window};
 
 use crate::platform;
 use crate::ui::app::App;
-use crate::ui::app::message::{Menu, Message};
+use crate::ui::app::message::{LibraryView, Menu, Message};
 use crate::ui::theme;
 
 impl App {
@@ -61,6 +61,16 @@ impl App {
         } else if self.menu.is_some() {
             self.menu = None;
             Task::none()
+        } else if self.deleting_album.is_some() {
+            self.deleting_album = None;
+            Task::none()
+        } else if let Some(view) = &self.library_view {
+            // an album goes back to the shelf, the shelf to the player
+            if matches!(view, LibraryView::Album(_)) {
+                self.show_library(LibraryView::Shelf)
+            } else {
+                self.close_library()
+            }
         } else if self.is_fullscreen {
             self.set_fullscreen(false)
         } else {
