@@ -56,6 +56,30 @@ pub fn on_screen(shown: bool) {
     let _ = shown;
 }
 
+/// The folder of the library. On a phone it is in the storage, where the
+/// PDF viewers can open its tab books, once the app may write there.
+pub fn library_folder() -> PathBuf {
+    let private =
+        crate::config::Config::library_folder().unwrap_or_else(|_| PathBuf::from("library"));
+    #[cfg(target_os = "android")]
+    if has_storage_access() {
+        return storage_root().join("MacGuitar").join("Library");
+    }
+    private
+}
+
+/// Open a PDF in the viewer the system has for it.
+pub fn open_pdf(path: &std::path::Path) -> Result<(), String> {
+    #[cfg(target_os = "android")]
+    {
+        crate::android::documents::open_pdf(path)
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        crate::ui::files::open_with_system(path).map_err(|err| err.to_string())
+    }
+}
+
 /// Open the settings where the access to the files is granted.
 pub fn request_storage_access() {
     #[cfg(target_os = "android")]

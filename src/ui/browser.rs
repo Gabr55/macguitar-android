@@ -3,31 +3,45 @@
 
 use std::path::{Path, PathBuf};
 
+use crate::library::Kind;
 use crate::ui::files::is_tablature;
 
 /// What the browser is looking for.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Pick {
     Tablature,
     SoundFont,
+    /// A tab, a PDF or a cover for the album of this id.
+    AlbumFile(String),
+    /// A folder to make an album of: folders only, and the one shown picked.
+    AlbumFolder,
 }
 
 impl Pick {
     /// Whether `path`, a file, is one of those looked for.
-    pub fn accepts(self, path: &Path) -> bool {
+    pub fn accepts(&self, path: &Path) -> bool {
         match self {
             Self::Tablature => is_tablature(path),
             Self::SoundFont => path
                 .extension()
                 .is_some_and(|extension| extension.eq_ignore_ascii_case("sf2")),
+            Self::AlbumFile(_) => Kind::of(path).is_some(),
+            Self::AlbumFolder => false,
         }
     }
 
-    pub const fn title(self) -> &'static str {
+    pub const fn title(&self) -> &'static str {
         match self {
             Self::Tablature => "Open a tab",
             Self::SoundFont => "Choose a SoundFont",
+            Self::AlbumFile(_) => "Add a tab, a PDF or a cover",
+            Self::AlbumFolder => "Choose the folder of an album",
         }
+    }
+
+    /// Whether the folder shown is what is picked.
+    pub const fn picks_folders(&self) -> bool {
+        matches!(self, Self::AlbumFolder)
     }
 }
 
@@ -84,7 +98,7 @@ impl FileBrowser {
     /// List the folder again.
     pub fn refresh(&mut self) {
         self.has_access = crate::platform::has_storage_access();
-        match list(&self.folder, self.pick) {
+        match list(&self.folder, &self.pick) {
             Ok(entries) => {
                 log::info!(
                     "Browsing {}: {} entries",
@@ -105,7 +119,7 @@ impl FileBrowser {
 
 /// The folders of `folder`, then its files `pick` accepts, each by name,
 /// hidden ones left out.
-fn list(folder: &Path, pick: Pick) -> std::io::Result<Vec<BrowserEntry>> {
+fn list(folder: &Path, pick: &Pick) -> std::io::Result<Vec<BrowserEntry>> {
     let mut entries: Vec<BrowserEntry> = std::fs::read_dir(folder)?
         .filter_map(Result::ok)
         .filter_map(|entry| {
@@ -125,7 +139,7 @@ fn list(folder: &Path, pick: Pick) -> std::io::Result<Vec<BrowserEntry>> {
     entries.sort_by(|a, b| {
         b.is_folder
             .cmp(&a.is_folder)
-            .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
+            .then_with(|| crate::library::natural_order(&a.name, &b.name))
     });
     Ok(entries)
 }

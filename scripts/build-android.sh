@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Build MacGuitar for Android phones (arm64): an APK in target/android/.
+# Build MacGuitar for Android: one APK for arm64, 32-bit arm and x86_64
+# phones, in target/android/.
 #
-#   scripts/build-android.sh            build MacGuitar-<version>-android-arm64.apk
+#   scripts/build-android.sh            build MacGuitar-<version>-android.apk
 #   scripts/build-android.sh --install  also install it on the phone adb sees
 #
 # Needs the Android SDK with an NDK (ANDROID_HOME, ANDROID_NDK_ROOT), Java,
@@ -39,12 +40,12 @@ if [ -z "${CARGO_APK_RELEASE_KEYSTORE:-}" ]; then
   export CARGO_APK_RELEASE_KEYSTORE_PASSWORD=android
 fi
 
-rustup target add aarch64-linux-android >/dev/null 2>&1 || true
+rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android >/dev/null 2>&1 || true
 cargo apk build --release --lib
 
 version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)
 out=target/android
-apk="$out/MacGuitar-$version-android-arm64.apk"
+apk="$out/MacGuitar-$version-android.apk"
 mkdir -p "$out"
 cp target/release/apk/MacGuitar.apk "$apk"
 echo "built $apk"

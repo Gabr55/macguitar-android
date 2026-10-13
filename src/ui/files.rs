@@ -72,6 +72,7 @@ pub async fn pick_sound_font() -> Option<PathBuf> {
 }
 
 /// Asks for files to add to an album: tabs, PDF tab books, a cover.
+#[cfg(not(target_os = "android"))]
 pub async fn pick_album_files() -> Vec<PathBuf> {
     let mut supported: Vec<&str> = SUPPORTED_EXTENSIONS.to_vec();
     supported.extend(["pdf", "jpg", "jpeg", "png", "webp"]);
@@ -85,6 +86,7 @@ pub async fn pick_album_files() -> Vec<PathBuf> {
 }
 
 /// Asks for a folder to make an album of; `None` when dismissed.
+#[cfg(not(target_os = "android"))]
 pub async fn pick_album_folder() -> Option<PathBuf> {
     rfd::AsyncFileDialog::new()
         .set_title("Choose the folder of an album")
@@ -95,6 +97,7 @@ pub async fn pick_album_folder() -> Option<PathBuf> {
 
 /// Open `path` with the application the system gives its kind: a PDF in
 /// the PDF viewer.
+#[cfg(not(target_os = "android"))]
 pub fn open_with_system(path: &Path) -> std::io::Result<()> {
     #[cfg(target_os = "macos")]
     let mut command = std::process::Command::new("open");

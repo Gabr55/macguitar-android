@@ -96,7 +96,9 @@ codegen-units = 1
 [package.metadata.android]
 package = "io.github.gabr55.macguitar"
 apk_name = "MacGuitar"
-build_targets = ["aarch64-linux-android"]
+# one APK for every phone: arm64 (nearly all), 32-bit arm (older ones),
+# x86_64 (Chromebooks, emulators)
+build_targets = ["aarch64-linux-android", "armv7-linux-androideabi", "x86_64-linux-android"]
 resources = "android/res"
 
 [package.metadata.android.sdk]

@@ -46,7 +46,7 @@ impl App {
     }
 
     /// Show the file browser on `folder`, looking for `pick`.
-    fn browse(&mut self, pick: Pick, folder: PathBuf) {
+    pub(super) fn browse(&mut self, pick: Pick, folder: PathBuf) {
         self.menu = None;
         self.browser = Some(FileBrowser::new(pick, folder));
     }
@@ -59,6 +59,9 @@ impl App {
         match browser.pick {
             Pick::Tablature => self.open_file(path),
             Pick::SoundFont => self.change_sound_font(Some(path)),
+            Pick::AlbumFile(id) => self.files_picked(&id, vec![path]),
+            // a folder is picked by its own button, not by a file in it
+            Pick::AlbumFolder => Task::none(),
         }
     }
 

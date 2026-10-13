@@ -168,6 +168,8 @@ pub enum Message {
     BrowseTo(PathBuf),
     /// A file picked in the file browser.
     BrowserPicked(PathBuf),
+    /// The folder shown in the file browser picked, to make an album of.
+    BrowserChoseFolder,
     CloseBrowser,
     /// The window came back to the front: what was listed may have changed.
     WindowFocused,
@@ -182,9 +184,13 @@ pub enum Message {
     ShowLibrary(LibraryView),
     NewAlbum,
     ImportFolder,
+    /// The folder dialog closed, on a folder or none.
+    #[cfg(not(target_os = "android"))]
     FolderPicked(Option<PathBuf>),
     /// Add tabs, PDFs or a cover to the album.
     AddToAlbum(String),
+    /// The file dialog closed on files for the album.
+    #[cfg(not(target_os = "android"))]
     FilesPicked(String, Vec<PathBuf>),
     /// An album made or changed off the interface's thread.
     AlbumReady(Result<Album, String>),
@@ -195,6 +201,8 @@ pub enum Message {
     /// Open a song of an album in the player.
     PlaySong(String, usize),
     OpenPdf(String, usize),
+    /// The PDF is shown in the system's viewer.
+    PdfOpened,
     RemoveSong(String, usize),
     RemovePdf(String, usize),
     /// Ask before deleting an album, then delete it, or not.

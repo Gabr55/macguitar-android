@@ -32,8 +32,10 @@ impl App {
             Message::ShowLibrary(view) => self.show_library(view),
             Message::NewAlbum => self.new_album(),
             Message::ImportFolder => self.import_folder(),
+            #[cfg(not(target_os = "android"))]
             Message::FolderPicked(folder) => self.folder_picked(folder),
             Message::AddToAlbum(id) => self.add_to_album(id),
+            #[cfg(not(target_os = "android"))]
             Message::FilesPicked(id, files) => self.files_picked(&id, files),
             Message::AlbumReady(result) => self.album_ready(result),
             Message::AlbumTitleChanged(id, title) => {
@@ -45,6 +47,7 @@ impl App {
             Message::ToggleBlock(id, song, block) => self.toggle_block(&id, song, block),
             Message::PlaySong(id, song) => self.play_song(&id, song),
             Message::OpenPdf(id, pdf) => self.open_pdf(&id, pdf),
+            Message::PdfOpened => Task::none(),
             Message::RemoveSong(id, song) => self.remove_from_album(&id, |album| {
                 (song < album.songs.len()).then(|| album.songs.remove(song).file)
             }),
@@ -68,6 +71,10 @@ impl App {
                 Task::none()
             }
             Message::BrowserPicked(path) => self.browser_picked(path),
+            Message::BrowserChoseFolder => {
+                let folder = self.browser.take().map(|browser| browser.folder);
+                self.folder_picked(folder)
+            }
             Message::Zoom(direction) => self.zoom(direction),
             Message::TouchDown(measure, beat) => self.touch_down(measure, beat),
             Message::TouchScrolled => self.touch_scrolled(),

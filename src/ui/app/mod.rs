@@ -184,9 +184,7 @@ impl App {
             menu: None,
             browser: None,
             window_size: Size::new(WINDOW_WIDTH, WINDOW_HEIGHT),
-            library: Library::open(
-                Config::library_folder().unwrap_or_else(|_| PathBuf::from("library")),
-            ),
+            library: Library::open(crate::platform::library_folder()),
             library_view: None,
             library_busy: false,
             deleting_album: None,

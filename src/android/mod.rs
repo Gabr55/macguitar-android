@@ -14,6 +14,7 @@ use crate::config::Config;
 use crate::ui::app::App;
 use crate::ui::files::is_tablature;
 
+pub mod documents;
 mod exit_reason;
 pub mod journal;
 mod tombstone;
@@ -203,7 +204,7 @@ static JNI: OnceLock<Jni> = OnceLock::new();
 
 /// Run `call` with a JNI environment and the activity (not the application
 /// context: only an activity starts other activities and has the intent).
-fn with_activity<T>(
+pub(crate) fn with_activity<T>(
     call: impl FnOnce(&mut JNIEnv, &JObject) -> jni::errors::Result<T>,
 ) -> jni::errors::Result<T> {
     let jni = JNI.get().ok_or(jni::errors::Error::NullPtr("activity"))?;

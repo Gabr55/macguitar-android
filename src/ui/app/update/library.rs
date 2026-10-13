@@ -4,9 +4,12 @@ use iced::Task;
 use std::path::PathBuf;
 
 use crate::library::{self, Album};
+use crate::platform;
 use crate::ui::app::App;
 use crate::ui::app::message::{LibraryView, Message};
-use crate::ui::files::{open_with_system, pick_album_files, pick_album_folder};
+use crate::ui::browser::Pick;
+#[cfg(not(target_os = "android"))]
+use crate::ui::files::{pick_album_files, pick_album_folder};
 
 impl App {
     pub(super) fn show_library(&mut self, view: LibraryView) -> Task<Message> {
@@ -32,11 +35,18 @@ impl App {
         self.show_library(LibraryView::Album(id))
     }
 
-    pub(super) fn import_folder(&self) -> Task<Message> {
+    pub(super) fn import_folder(&mut self) -> Task<Message> {
         if self.library_busy {
             return Task::none();
         }
-        Task::perform(pick_album_folder(), Message::FolderPicked)
+        if platform::BROWSES_FILES {
+            self.browse(Pick::AlbumFolder, platform::default_folder());
+            return Task::none();
+        }
+        #[cfg(not(target_os = "android"))]
+        return Task::perform(pick_album_folder(), Message::FolderPicked);
+        #[cfg(target_os = "android")]
+        Task::none()
     }
 
     /// An album from the folder picked, made off the interface's thread:
@@ -53,13 +63,20 @@ impl App {
         )
     }
 
-    pub(super) fn add_to_album(&self, id: String) -> Task<Message> {
+    pub(super) fn add_to_album(&mut self, id: String) -> Task<Message> {
         if self.library_busy {
             return Task::none();
         }
-        Task::perform(pick_album_files(), move |files| {
+        if platform::BROWSES_FILES {
+            self.browse(Pick::AlbumFile(id), platform::default_folder());
+            return Task::none();
+        }
+        #[cfg(not(target_os = "android"))]
+        return Task::perform(pick_album_files(), move |files| {
             Message::FilesPicked(id.clone(), files)
-        })
+        });
+        #[cfg(target_os = "android")]
+        Task::none()
     }
 
     pub(super) fn files_picked(&mut self, id: &str, files: Vec<PathBuf>) -> Task<Message> {
@@ -136,12 +153,10 @@ impl App {
             return Task::none();
         };
         let path = album.folder(self.library.root()).join(name);
-        match open_with_system(&path) {
-            Ok(()) => Task::none(),
-            Err(err) => Task::done(Message::ReportError(format!(
-                "Could not open {name}: {err}"
-            ))),
-        }
+        // a phone may need a moment to index a PDF before it can be shown
+        Task::perform(blocking(move || platform::open_pdf(&path)), |opened| {
+            opened.map_or_else(Message::ReportError, |()| Message::PdfOpened)
+        })
     }
 
     /// Forget a song or a PDF of an album, and delete its file.

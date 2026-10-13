@@ -61,7 +61,19 @@ pub(super) fn file_browser<'a>(browser: &'a FileBrowser, tokens: Tokens) -> Elem
             .into()
     };
 
-    container(column![heading, body].spacing(10))
+    // picking a folder, the one shown is taken with a button of its own
+    let choose: Element<'a, Message> = if browser.pick.picks_folders() && browser.has_access {
+        button(text("Use this folder").size(14).font(UI_FONT_BOLD))
+            .padding([10, 16])
+            .width(Length::Fill)
+            .style(theme::primary_button)
+            .on_press(Message::BrowserChoseFolder)
+            .into()
+    } else {
+        Space::new().into()
+    };
+
+    container(column![heading, body, choose].spacing(10))
         .padding(12)
         .max_width(BROWSER_WIDTH)
         .height(Length::Fill)
